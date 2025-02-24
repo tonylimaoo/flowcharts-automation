@@ -66,7 +66,7 @@ const main = async () => {
     flowchart TB;
     ${joinFluxograms}\n
 `
-  fs.writeFile('diagram_VS_CODE', mermaidContentToVscode, 'utf8', (err) => {
+  fs.writeFile('diagrams_md/diagram_VS_CODE', mermaidContentToVscode, 'utf8', (err) => {
     if (err) {
       console.error('Erro ao escrever o arquivo:', err);
     } else {
@@ -74,7 +74,7 @@ const main = async () => {
     }
   });
 
-  fs.writeFile('diagram_to_png', mermaidContentToPNG, 'utf8', (err) => {
+  fs.writeFile('diagrams_md/diagram_to_png', mermaidContentToPNG, 'utf8', (err) => {
     if (err) {
       console.error('Erro ao escrever o arquivo:', err);
     } else {
