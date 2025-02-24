@@ -82,7 +82,7 @@ const main = async () => {
     }
   });
 
-  await createPNG('diagram_to_png', './diagrams/diagram.png')
+  await createPNG('./diagrams_md/diagram_to_png', './diagrams/diagram.png')
   await gerarImagem(mermaidContentToPNG)
 
 }
