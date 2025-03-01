@@ -3,3 +3,5 @@ node_modules/
 diagrams/*
 
 diagrams_md/*
+
+fluxogram.csv

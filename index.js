@@ -1,88 +1,53 @@
-import fs from 'fs'
-import fastcsv from 'fast-csv'
-import { readCSV, createPNG, gerarImagem } from './functions/readCSV.js'
+import { readCSV, gerarImagem, buildFluxogramArray, fluxogramToString, writeFluxogramFile } from './functions/utils.js'
 
 const main = async () => {
 
   let rows = []
   try {
-    rows = await readCSV('fluxogram_natura_produto.csv')
+    rows = await readCSV('fluxogram.csv') // put the csv file on the root folder and change the file path here
   } catch (error) {
     console.error('Erro ao ler CSV:', error);
   }
 
-  const classificateUniqueTables = rows.map((row, index) => {
+  const uniqueTables = Array.from(new Set(rows.map(row => row.table)))
+  const uniqueViews = Array.from(new Set(rows.map(row => row.view)))
+  // const indexedUniqueTables = rows.map((row, index) => {
+  const indexedUniqueTables = uniqueTables.map((table_name, index) => {
     return {
-      table_name: row.table,
-      table_view: row.view,
-      entity_table_index: `T${index}`,
-      entity_view_index: `V${index}`
+      table_name: table_name,
+      entity_index: `T${index}`,
     }
   })
 
-  const fluxogramArray = rows.map(row => {
-    const rowFlux = row.fluxogram.split('|')
-
-    const classificViewsAndTables = rowFlux.map(flux => {
-      const entityType = flux.split(':')[0]
-      const entityName = flux.split(':')[1]
-      const entityTableIndex = classificateUniqueTables.find(table => table.table_name === entityName)
-      const entityViewIndex = classificateUniqueTables.find(table => table.table_view === entityName)
-      const refurbTableIndex = entityTableIndex ? entityTableIndex.entity_table_index : null
-      const refurbViewIndex = entityViewIndex ? entityViewIndex.entity_view_index : null
-      const targetTable = classificateUniqueTables.find(table => table.table_name === entityName)
-      const refurbTargetTable = targetTable ? targetTable.table_name : null
-
-      return {
-        entity_name: entityName,
-        entity_type: entityType,
-        entity_index: entityType === 'table' ? refurbTableIndex : refurbViewIndex,
-        target_table: refurbTargetTable
-      }
-    })
-
-    return classificViewsAndTables
+  const indexedUniqueViews = uniqueViews.map((view_name, index) => {
+    return {
+      view_name: view_name,
+      entity_index: `V${index}`,
+    }
   })
 
-  const joinFlux = fluxogramArray.map(flux => {
-    const fluxArrayString = flux.map(f => {
-      // return `${f.entity_index === null ? 'A' : f.entity_index}[(${f.entity_name})]`
-      return `${f.entity_index === null ? 'A' : f.entity_index}${f.entity_type === 'table' ? `[(${f.entity_name})]` : `([${f.entity_name}])`}`
-    })
+  const fluxogramArray = buildFluxogramArray(rows, indexedUniqueTables, indexedUniqueViews)
 
-    return fluxArrayString.join(' --> ')
-  })
+  const joinFlux = fluxogramToString(fluxogramArray)
 
   const joinFluxograms = joinFlux.join(';\n')
 
   const mermaidContentToVscode = ` 
-\`\`\`mermaid
+  \`\`\`mermaid
+  %%{ init: { "flowchart": { "nodeSpacing": 50, "rankSpacing": 300 } } }%%
     flowchart TB;
     ${joinFluxograms};\n
-\`\`\`
-`
+  \`\`\`
+  ` 
   const mermaidContentToPNG = ` 
   %%{ init: { "flowchart": { "nodeSpacing": 50, "rankSpacing": 300 } } }%%
     flowchart TB;
     ${joinFluxograms}\n
-`
-  fs.writeFile('diagrams_md/diagram_VS_CODE', mermaidContentToVscode, 'utf8', (err) => {
-    if (err) {
-      console.error('Erro ao escrever o arquivo:', err);
-    } else {
-      console.log('Arquivo diagram criado com sucesso!');
-    }
-  });
+  `
 
-  fs.writeFile('diagrams_md/diagram_to_png', mermaidContentToPNG, 'utf8', (err) => {
-    if (err) {
-      console.error('Erro ao escrever o arquivo:', err);
-    } else {
-      console.log('Arquivo diagram criado com sucesso!');
-    }
-  });
+  writeFluxogramFile('diagrams_md/diagram_VS_CODE.md', mermaidContentToVscode)
+  writeFluxogramFile('diagrams_md/diagram_to_png', mermaidContentToPNG)
 
-  await createPNG('./diagrams_md/diagram_to_png', './diagrams/diagram.png')
   await gerarImagem(mermaidContentToPNG)
 
 }
